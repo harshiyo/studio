@@ -160,8 +160,12 @@ export default function Dashboard({ orders, deleteOrder, updateOrder, toggleOrde
     });
 
     return (
-        <Tabs defaultValue="today" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
+        <Tabs defaultValue="all" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-4">
+                <TabsTrigger value="all">
+                    All
+                    {sortedOrders.length > 0 && <Badge className="ml-2 bg-primary/20 text-primary hover:bg-primary/30">{sortedOrders.length}</Badge>}
+                </TabsTrigger>
                 <TabsTrigger value="today">
                     Today
                     {todaysDeliveries.length > 0 && <Badge className="ml-2 bg-primary/20 text-primary hover:bg-primary/30">{todaysDeliveries.length}</Badge>}
@@ -171,6 +175,21 @@ export default function Dashboard({ orders, deleteOrder, updateOrder, toggleOrde
                     {tomorrowsDeliveries.length > 0 && <Badge className="ml-2 bg-primary/20 text-primary hover:bg-primary/30">{tomorrowsDeliveries.length}</Badge>}
                 </TabsTrigger>
             </TabsList>
+             <TabsContent value="all">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {sortedOrders.length > 0 ? (
+                        sortedOrders.map(order => <OrderCard key={order.id} order={order} deleteOrder={deleteOrder} updateOrder={updateOrder} toggleOrderStatus={toggleOrderStatus} />)
+                    ) : (
+                        <div className="md:col-span-2 lg:col-span-3">
+                            <EmptyState 
+                                title="No Deliveries Yet"
+                                description="Click the button below to add your first delivery."
+                                icon={Truck}
+                            />
+                        </div>
+                    )}
+                </div>
+            </TabsContent>
             <TabsContent value="today">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {todaysDeliveries.length > 0 ? (
