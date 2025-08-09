@@ -45,28 +45,30 @@ export default function Home() {
   };
 
   return (
-    <main className="container mx-auto p-4 md:p-8">
-      <header className="mb-8 text-center">
-        <h1 className="text-4xl font-bold font-headline text-primary">Delivery Dashboard</h1>
-        <p className="text-muted-foreground mt-2">Track and manage your upcoming deliveries.</p>
-      </header>
-      
-      <Dashboard orders={orders} deleteOrder={deleteOrder} updateOrder={updateOrder} toggleOrderStatus={toggleOrderStatus} />
+    <div className="min-h-screen bg-background">
+      <main className="container mx-auto p-4 sm:p-6 md:p-8">
+        <header className="mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white tracking-tight">Delivery Dashboard</h1>
+          <p className="text-muted-foreground mt-1 sm:mt-2">Track and manage your upcoming deliveries.</p>
+        </header>
+        
+        <Dashboard orders={orders} deleteOrder={deleteOrder} updateOrder={updateOrder} toggleOrderStatus={toggleOrderStatus} />
 
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogTrigger asChild>
-          <Button className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg" size="icon">
-            <Plus className="h-8 w-8" />
-            <span className="sr-only">Add New Delivery</span>
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Delivery</DialogTitle>
-          </DialogHeader>
-          <OrderForm addOrder={addOrder} />
-        </DialogContent>
-      </Dialog>
-    </main>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg" size="icon">
+              <Plus className="h-7 w-7" />
+              <span className="sr-only">Add New Delivery</span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Delivery</DialogTitle>
+            </DialogHeader>
+            <OrderForm addOrder={addOrder} />
+          </DialogContent>
+        </Dialog>
+      </main>
+    </div>
   );
 }

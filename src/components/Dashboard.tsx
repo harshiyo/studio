@@ -2,13 +2,13 @@
 
 import type { Order } from "@/lib/types";
 import { format, isTomorrow, parseISO, isToday } from 'date-fns';
-import { Truck, Package, X, Calendar as CalendarIcon, User, Building, Pencil, Check } from 'lucide-react';
+import { Truck, Package, X, Calendar as CalendarIcon, User, Building, Pencil, Check, MoreVertical } from 'lucide-react';
 import * as React from "react";
 import OrderForm from './OrderForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { cn } from "@/lib/utils";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface DashboardProps {
     orders: Order[];
@@ -38,25 +44,32 @@ const OrderCard = ({ order, deleteOrder, updateOrder, toggleOrderStatus }: { ord
     const isCompleted = order.status === 'completed';
 
     return (
-        <Card className={cn("transition-all hover:shadow-md", isCompleted && "bg-muted/50")}>
-            <CardHeader>
+        <Card className={cn("transition-all hover:shadow-lg", isCompleted && "bg-muted/60 dark:bg-muted/30")}>
+            <CardContent className="p-4 grid gap-4">
                 <div className="flex justify-between items-start">
-                    <div className={cn(isCompleted && "line-through text-muted-foreground")}>
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                            <Building className="w-5 h-5 text-primary" />
+                    <div className="grid gap-1">
+                        <div className={cn("font-semibold flex items-center gap-2 text-base", isCompleted && "line-through text-muted-foreground")}>
+                            <Building className="w-4 h-4 text-primary shrink-0" />
                             {order.company}
-                        </CardTitle>
-                        <CardDescription className="flex items-center gap-2 mt-1">
-                             <User className="w-4 h-4" />
+                        </div >
+                        <div className={cn("text-sm text-muted-foreground flex items-center gap-2", isCompleted && "line-through")}>
+                             <User className="w-4 h-4 shrink-0" />
                             {order.customerName}
-                        </CardDescription>
+                        </div>
                     </div>
-                     <div className="flex items-center">
-                        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                     <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                            <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                             <DialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary hover:bg-primary/10 h-8 w-8">
-                                    <Pencil className="w-4 h-4" />
-                                </Button>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit
+                                </DropdownMenuItem>
                             </DialogTrigger>
                             <DialogContent>
                                 <DialogHeader>
@@ -73,9 +86,10 @@ const OrderCard = ({ order, deleteOrder, updateOrder, toggleOrderStatus }: { ord
                         </Dialog>
                          <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 w-8">
-                                <X className="w-4 h-4" />
-                            </Button>
+                             <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" onSelect={(e) => e.preventDefault()}>
+                                <X className="mr-2 h-4 w-4" />
+                                Delete
+                            </DropdownMenuItem>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
@@ -92,21 +106,21 @@ const OrderCard = ({ order, deleteOrder, updateOrder, toggleOrderStatus }: { ord
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+                
+                <div className={cn("grid sm:grid-cols-2 gap-4 text-sm", isCompleted && "line-through text-muted-foreground")}>
+                    <div className="flex items-center gap-2">
+                        <Package className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <span>{order.containerSize} container, Qty: {order.quantity}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <CalendarIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <span>{format(deliveryDate, 'EEE, LLL d')}</span>
                     </div>
                 </div>
-            </CardHeader>
-            <CardContent className="grid gap-4 text-sm">
-                <div className={cn("grid gap-2", isCompleted && "line-through text-muted-foreground")}>
-                    <div className="flex items-center gap-2">
-                        <Package className="w-4 h-4 text-muted-foreground" />
-                        <span>{order.containerSize} container, Quantity: {order.quantity}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <CalendarIcon className="w-4 h-4 text-muted-foreground" />
-                        <span>{format(deliveryDate, 'EEEE, LLL d, yyyy')}</span>
-                    </div>
-                </div>
-                 <div className="flex items-center space-x-2">
+                 <div className="flex items-center space-x-2 pt-2 border-t border-dashed -mx-4 px-4">
                     <Checkbox id={`complete-${order.id}`} checked={isCompleted} onCheckedChange={() => toggleOrderStatus(order.id)} />
                     <label
                         htmlFor={`complete-${order.id}`}
@@ -114,7 +128,7 @@ const OrderCard = ({ order, deleteOrder, updateOrder, toggleOrderStatus }: { ord
                     >
                         Mark as completed
                     </label>
-                    {isCompleted && <Check className="w-5 h-5 text-green-600" />}
+                    {isCompleted && <Badge variant="secondary" className="text-green-600 border-green-600/20">Completed</Badge>}
                 </div>
             </CardContent>
         </Card>
@@ -122,9 +136,9 @@ const OrderCard = ({ order, deleteOrder, updateOrder, toggleOrderStatus }: { ord
 }
 
 const EmptyState = ({title, description, icon: Icon}: {title: string, description: string, icon: React.ElementType}) => (
-    <div className="text-center py-12 px-6 bg-card rounded-lg border border-dashed">
-        <Icon className="mx-auto h-12 w-12 text-muted-foreground" />
-        <h3 className="mt-4 text-lg font-semibold">{title}</h3>
+    <div className="text-center py-12 px-6 bg-card rounded-lg border-2 border-dashed">
+        <Icon className="mx-auto h-12 w-12 text-muted-foreground/50" />
+        <h3 className="mt-4 text-lg font-semibold text-gray-800 dark:text-white">{title}</h3>
         <p className="mt-2 text-sm text-muted-foreground">
             {description}
         </p>
@@ -146,40 +160,44 @@ export default function Dashboard({ orders, deleteOrder, updateOrder, toggleOrde
     });
 
     return (
-        <Tabs defaultValue="today">
-            <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="today" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
                 <TabsTrigger value="today">
-                    Today's Deliveries
-                    {todaysDeliveries.length > 0 && <Badge className="ml-2">{todaysDeliveries.length}</Badge>}
+                    Today
+                    {todaysDeliveries.length > 0 && <Badge className="ml-2 bg-primary/20 text-primary hover:bg-primary/30">{todaysDeliveries.length}</Badge>}
                 </TabsTrigger>
                 <TabsTrigger value="tomorrow">
-                    Tomorrow's Deliveries
-                    {tomorrowsDeliveries.length > 0 && <Badge className="ml-2">{tomorrowsDeliveries.length}</Badge>}
+                    Tomorrow
+                    {tomorrowsDeliveries.length > 0 && <Badge className="ml-2 bg-primary/20 text-primary hover:bg-primary/30">{tomorrowsDeliveries.length}</Badge>}
                 </TabsTrigger>
             </TabsList>
-            <TabsContent value="today" className="mt-4">
-                <div className="space-y-4">
+            <TabsContent value="today">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {todaysDeliveries.length > 0 ? (
                         todaysDeliveries.map(order => <OrderCard key={order.id} order={order} deleteOrder={deleteOrder} updateOrder={updateOrder} toggleOrderStatus={toggleOrderStatus} />)
                     ) : (
-                        <EmptyState 
-                            title="No Deliveries for Today"
-                            description="Check back later or add a new delivery."
-                            icon={CalendarIcon}
-                        />
+                        <div className="md:col-span-2 lg:col-span-3">
+                            <EmptyState 
+                                title="No Deliveries for Today"
+                                description="Check back later or add a new delivery."
+                                icon={CalendarIcon}
+                            />
+                        </div>
                     )}
                 </div>
             </TabsContent>
-            <TabsContent value="tomorrow" className="mt-4">
-                <div className="space-y-4">
+            <TabsContent value="tomorrow">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {tomorrowsDeliveries.length > 0 ? (
                         tomorrowsDeliveries.map(order => <OrderCard key={order.id} order={order} deleteOrder={deleteOrder} updateOrder={updateOrder} toggleOrderStatus={toggleOrderStatus} />)
                     ) : (
-                       <EmptyState 
-                            title="No Deliveries for Tomorrow"
-                            description="Check back later or add a new delivery."
-                            icon={Truck}
-                        />
+                       <div className="md:col-span-2 lg:col-span-3">
+                           <EmptyState 
+                                title="No Deliveries for Tomorrow"
+                                description="Check back later or add a new delivery."
+                                icon={Truck}
+                            />
+                        </div>
                     )}
                 </div>
             </TabsContent>
