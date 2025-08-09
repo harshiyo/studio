@@ -1,7 +1,7 @@
 "use client"
 
 import type { Order } from "@/lib/types";
-import { format, isTomorrow, parseISO } from 'date-fns';
+import { format, isTomorrow, parseISO, startOfToday } from 'date-fns';
 import { Truck, Package, X, Calendar as CalendarIcon, User, Building } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -92,7 +92,10 @@ const EmptyState = () => (
 
 export default function Dashboard({ orders, deleteOrder }: DashboardProps) {
     const sortedOrders = [...orders].sort((a, b) => new Date(a.deliveryDate).getTime() - new Date(b.deliveryDate).getTime());
-    const tomorrowsDeliveries = sortedOrders.filter(order => isTomorrow(parseISO(order.deliveryDate)));
+    const tomorrowsDeliveries = sortedOrders.filter(order => {
+        const deliveryDate = parseISO(order.deliveryDate);
+        return isTomorrow(deliveryDate);
+    });
 
     return (
         <Tabs defaultValue="all">
