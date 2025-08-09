@@ -40,7 +40,7 @@ const orderSchema = z.object({
 type OrderFormValues = z.infer<typeof orderSchema>
 
 interface OrderFormProps {
-    addOrder?: (order: Omit<Order, 'id' | 'deliveryDate'> & { deliveryDate: Date }) => void;
+    addOrder?: (order: Omit<Order, 'id' | 'deliveryDate' | 'status'> & { deliveryDate: Date }) => void;
     updateOrder?: (order: Order) => void;
     orderToEdit?: Order;
 }
@@ -64,8 +64,8 @@ export default function OrderForm({ addOrder, updateOrder, orderToEdit }: OrderF
   function onSubmit(data: OrderFormValues) {
     if (isEditMode && updateOrder && orderToEdit) {
         updateOrder({
+            ...orderToEdit,
             ...data,
-            id: orderToEdit.id,
             deliveryDate: data.deliveryDate.toISOString(),
         });
         toast({
@@ -84,20 +84,14 @@ export default function OrderForm({ addOrder, updateOrder, orderToEdit }: OrderF
     }
   }
 
-  const FormWrapper = isEditMode ? 'div' : Card;
-  const formProps = isEditMode ? {} : { className: "shadow-lg" };
+  const FormWrapper = isEditMode ? 'div' : 'div';
+  const formProps = isEditMode ? {} : { className: "" };
 
   return (
     <FormWrapper {...formProps}>
-      {!isEditMode && (
-        <CardHeader>
-          <CardTitle>Add New Delivery</CardTitle>
-          <CardDescription>Fill in the details to schedule a new delivery.</CardDescription>
-        </CardHeader>
-      )}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className={cn("space-y-4", isEditMode && "p-0")}>
+          <div className={cn("space-y-4", isEditMode ? "p-0" : "p-2")}>
             <FormField
               control={form.control}
               name="company"
@@ -203,12 +197,12 @@ export default function OrderForm({ addOrder, updateOrder, orderToEdit }: OrderF
                 </FormItem>
               )}
             />
-          </CardContent>
-          <CardFooter className={cn(isEditMode && "p-0 pt-4")}>
+          </div>
+          <div className={cn("pt-4")}>
             <Button type="submit" className="w-full">
                 {isEditMode ? "Update Delivery" : "Save Delivery"}
             </Button>
-          </CardFooter>
+          </div>
         </form>
       </Form>
     </FormWrapper>

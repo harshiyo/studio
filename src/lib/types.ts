@@ -9,4 +9,5 @@ export type Order = {
   containerSize: ContainerSize;
   quantity: number;
   deliveryDate: string; // ISO 8601 string format
+  status: 'pending' | 'completed';
 };

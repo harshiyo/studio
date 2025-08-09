@@ -1,16 +1,18 @@
 "use client"
 
 import type { Order } from "@/lib/types";
-import { format, isTomorrow, parseISO } from 'date-fns';
-import { Truck, Package, X, Calendar as CalendarIcon, User, Building, Pencil } from 'lucide-react';
+import { format, isTomorrow, parseISO, isToday } from 'date-fns';
+import { Truck, Package, X, Calendar as CalendarIcon, User, Building, Pencil, Check } from 'lucide-react';
 import * as React from "react";
 import OrderForm from './OrderForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { cn } from "@/lib/utils";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,17 +29,19 @@ interface DashboardProps {
     orders: Order[];
     deleteOrder: (id: string) => void;
     updateOrder: (order: Order) => void;
+    toggleOrderStatus: (id: string) => void;
 }
 
-const OrderCard = ({ order, deleteOrder, updateOrder }: { order: Order; deleteOrder: (id: string) => void; updateOrder: (order: Order) => void; }) => {
+const OrderCard = ({ order, deleteOrder, updateOrder, toggleOrderStatus }: { order: Order; deleteOrder: (id: string) => void; updateOrder: (order: Order) => void; toggleOrderStatus: (id: string) => void; }) => {
     const deliveryDate = parseISO(order.deliveryDate);
     const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+    const isCompleted = order.status === 'completed';
 
     return (
-        <Card className="transition-all hover:shadow-md">
+        <Card className={cn("transition-all hover:shadow-md", isCompleted && "bg-muted/50")}>
             <CardHeader>
                 <div className="flex justify-between items-start">
-                    <div>
+                    <div className={cn(isCompleted && "line-through text-muted-foreground")}>
                         <CardTitle className="flex items-center gap-2 text-lg">
                             <Building className="w-5 h-5 text-primary" />
                             {order.company}
@@ -91,69 +95,91 @@ const OrderCard = ({ order, deleteOrder, updateOrder }: { order: Order; deleteOr
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="grid gap-2 text-sm">
-                <div className="flex items-center gap-2">
-                    <Package className="w-4 h-4 text-muted-foreground" />
-                    <span>{order.containerSize} container, Quantity: {order.quantity}</span>
+            <CardContent className="grid gap-4 text-sm">
+                <div className={cn("grid gap-2", isCompleted && "line-through text-muted-foreground")}>
+                    <div className="flex items-center gap-2">
+                        <Package className="w-4 h-4 text-muted-foreground" />
+                        <span>{order.containerSize} container, Quantity: {order.quantity}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <CalendarIcon className="w-4 h-4 text-muted-foreground" />
+                        <span>{format(deliveryDate, 'EEEE, LLL d, yyyy')}</span>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <CalendarIcon className="w-4 h-4 text-muted-foreground" />
-                    <span>{format(deliveryDate, 'EEEE, LLL d, yyyy')}</span>
+                 <div className="flex items-center space-x-2">
+                    <Checkbox id={`complete-${order.id}`} checked={isCompleted} onCheckedChange={() => toggleOrderStatus(order.id)} />
+                    <label
+                        htmlFor={`complete-${order.id}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                        Mark as completed
+                    </label>
+                    {isCompleted && <Check className="w-5 h-5 text-green-600" />}
                 </div>
-                {isTomorrow(deliveryDate) && <Badge variant="default" className="w-fit bg-accent text-accent-foreground mt-2">Delivery Tomorrow</Badge>}
             </CardContent>
         </Card>
     );
 }
 
-const EmptyState = () => (
+const EmptyState = ({title, description, icon: Icon}: {title: string, description: string, icon: React.ElementType}) => (
     <div className="text-center py-12 px-6 bg-card rounded-lg border border-dashed">
-        <Truck className="mx-auto h-12 w-12 text-muted-foreground" />
-        <h3 className="mt-4 text-lg font-semibold">No Deliveries Scheduled</h3>
+        <Icon className="mx-auto h-12 w-12 text-muted-foreground" />
+        <h3 className="mt-4 text-lg font-semibold">{title}</h3>
         <p className="mt-2 text-sm text-muted-foreground">
-            Use the form to add a new delivery.
+            {description}
         </p>
     </div>
 );
 
 
-export default function Dashboard({ orders, deleteOrder, updateOrder }: DashboardProps) {
+export default function Dashboard({ orders, deleteOrder, updateOrder, toggleOrderStatus }: DashboardProps) {
     const sortedOrders = [...orders].sort((a, b) => new Date(a.deliveryDate).getTime() - new Date(b.deliveryDate).getTime());
+    
+    const todaysDeliveries = sortedOrders.filter(order => {
+        const deliveryDate = parseISO(order.deliveryDate);
+        return isToday(deliveryDate);
+    });
+
     const tomorrowsDeliveries = sortedOrders.filter(order => {
         const deliveryDate = parseISO(order.deliveryDate);
         return isTomorrow(deliveryDate);
     });
 
     return (
-        <Tabs defaultValue="all">
+        <Tabs defaultValue="today">
             <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="all">All Deliveries</TabsTrigger>
+                <TabsTrigger value="today">
+                    Today's Deliveries
+                    {todaysDeliveries.length > 0 && <Badge className="ml-2">{todaysDeliveries.length}</Badge>}
+                </TabsTrigger>
                 <TabsTrigger value="tomorrow">
                     Tomorrow's Deliveries
-                    {tomorrowsDeliveries.length > 0 && <Badge className="ml-2 bg-accent text-accent-foreground">{tomorrowsDeliveries.length}</Badge>}
+                    {tomorrowsDeliveries.length > 0 && <Badge className="ml-2">{tomorrowsDeliveries.length}</Badge>}
                 </TabsTrigger>
             </TabsList>
-            <TabsContent value="all" className="mt-4">
+            <TabsContent value="today" className="mt-4">
                 <div className="space-y-4">
-                    {sortedOrders.length > 0 ? (
-                        sortedOrders.map(order => <OrderCard key={order.id} order={order} deleteOrder={deleteOrder} updateOrder={updateOrder} />)
+                    {todaysDeliveries.length > 0 ? (
+                        todaysDeliveries.map(order => <OrderCard key={order.id} order={order} deleteOrder={deleteOrder} updateOrder={updateOrder} toggleOrderStatus={toggleOrderStatus} />)
                     ) : (
-                        <EmptyState />
+                        <EmptyState 
+                            title="No Deliveries for Today"
+                            description="Check back later or add a new delivery."
+                            icon={CalendarIcon}
+                        />
                     )}
                 </div>
             </TabsContent>
             <TabsContent value="tomorrow" className="mt-4">
                 <div className="space-y-4">
                     {tomorrowsDeliveries.length > 0 ? (
-                        tomorrowsDeliveries.map(order => <OrderCard key={order.id} order={order} deleteOrder={deleteOrder} updateOrder={updateOrder} />)
+                        tomorrowsDeliveries.map(order => <OrderCard key={order.id} order={order} deleteOrder={deleteOrder} updateOrder={updateOrder} toggleOrderStatus={toggleOrderStatus} />)
                     ) : (
-                       <div className="text-center py-12 px-6 bg-card rounded-lg border border-dashed">
-                            <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground" />
-                            <h3 className="mt-4 text-lg font-semibold">No Deliveries for Tomorrow</h3>
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                Check back later or add a new delivery.
-                            </p>
-                        </div>
+                       <EmptyState 
+                            title="No Deliveries for Tomorrow"
+                            description="Check back later or add a new delivery."
+                            icon={Truck}
+                        />
                     )}
                 </div>
             </TabsContent>
