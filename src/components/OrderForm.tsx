@@ -18,13 +18,14 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { Calendar } from "@/components/ui/calendar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { containerSizes } from "@/lib/types"
 import type { Order } from "@/lib/types"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 
 const orderSchema = z.object({
@@ -48,6 +49,8 @@ interface OrderFormProps {
 export default function OrderForm({ addOrder, updateOrder, orderToEdit }: OrderFormProps) {
   const { toast } = useToast()
   const isEditMode = !!orderToEdit;
+  const isMobile = useIsMobile();
+  const [isDatePickerOpen, setIsDatePickerOpen] = React.useState(false);
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
@@ -86,6 +89,23 @@ export default function OrderForm({ addOrder, updateOrder, orderToEdit }: OrderF
 
   const FormWrapper = isEditMode ? 'div' : 'div';
   const formProps = isEditMode ? {} : { className: "" };
+
+  const CalendarDatePicker = ({field}: {field: any}) => (
+    <Calendar
+        mode="single"
+        selected={field.value}
+        onSelect={(date) => {
+            field.onChange(date);
+            if (isMobile) {
+              setIsDatePickerOpen(false);
+            }
+        }}
+        disabled={(date) =>
+            date < startOfToday()
+        }
+        initialFocus
+    />
+  )
 
   return (
     <FormWrapper {...formProps}>
@@ -162,37 +182,55 @@ export default function OrderForm({ addOrder, updateOrder, orderToEdit }: OrderF
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Delivery Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                          date < startOfToday()
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  {isMobile ? (
+                     <Dialog open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                        <DialogTrigger asChild>
+                           <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </DialogTrigger>
+                        <DialogContent className="w-auto p-0">
+                            <CalendarDatePicker field={field} />
+                        </DialogContent>
+                     </Dialog>
+                  ) : (
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <FormControl>
+                            <Button
+                            variant={"outline"}
+                            className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                            )}
+                            >
+                            {field.value ? (
+                                format(field.value, "PPP")
+                            ) : (
+                                <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                        </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarDatePicker field={field} />
+                        </PopoverContent>
+                    </Popover>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
