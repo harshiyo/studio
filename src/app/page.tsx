@@ -17,6 +17,12 @@ export default function Home() {
     setOrders((prevOrders) => [...prevOrders, newOrder]);
   };
 
+  const updateOrder = (updatedOrder: Order) => {
+    setOrders((prevOrders) => 
+      prevOrders.map(order => order.id === updatedOrder.id ? updatedOrder : order)
+    );
+  }
+
   const deleteOrder = (orderId: string) => {
     setOrders((prevOrders) => prevOrders.filter(order => order.id !== orderId));
   }
@@ -32,7 +38,7 @@ export default function Home() {
           <OrderForm addOrder={addOrder} />
         </div>
         <div className="lg:col-span-3">
-          <Dashboard orders={orders} deleteOrder={deleteOrder} />
+          <Dashboard orders={orders} deleteOrder={deleteOrder} updateOrder={updateOrder} />
         </div>
       </div>
     </main>

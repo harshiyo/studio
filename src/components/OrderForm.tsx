@@ -3,8 +3,9 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { format, startOfToday } from "date-fns"
+import { format, startOfToday, parseISO } from "date-fns"
 import { Calendar as CalendarIcon, CheckCircle } from "lucide-react"
+import React from 'react';
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -39,15 +40,21 @@ const orderSchema = z.object({
 type OrderFormValues = z.infer<typeof orderSchema>
 
 interface OrderFormProps {
-    addOrder: (order: Omit<Order, 'id' | 'deliveryDate'> & { deliveryDate: Date }) => void;
+    addOrder?: (order: Omit<Order, 'id' | 'deliveryDate'> & { deliveryDate: Date }) => void;
+    updateOrder?: (order: Order) => void;
+    orderToEdit?: Order;
 }
 
-export default function OrderForm({ addOrder }: OrderFormProps) {
+export default function OrderForm({ addOrder, updateOrder, orderToEdit }: OrderFormProps) {
   const { toast } = useToast()
+  const isEditMode = !!orderToEdit;
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
-    defaultValues: {
+    defaultValues: isEditMode ? {
+        ...orderToEdit,
+        deliveryDate: parseISO(orderToEdit.deliveryDate),
+    } : {
       customerName: "",
       company: "",
       quantity: 1,
@@ -55,24 +62,42 @@ export default function OrderForm({ addOrder }: OrderFormProps) {
   })
 
   function onSubmit(data: OrderFormValues) {
-    addOrder(data);
-    toast({
-        title: "Order Saved!",
-        description: `Delivery for ${data.company} scheduled successfully.`,
-        action: <CheckCircle className="text-green-500" />,
-    })
-    form.reset();
+    if (isEditMode && updateOrder && orderToEdit) {
+        updateOrder({
+            ...data,
+            id: orderToEdit.id,
+            deliveryDate: data.deliveryDate.toISOString(),
+        });
+        toast({
+            title: "Order Updated!",
+            description: `Delivery for ${data.company} updated successfully.`,
+            action: <CheckCircle className="text-green-500" />,
+        })
+    } else if (addOrder) {
+        addOrder(data);
+        toast({
+            title: "Order Saved!",
+            description: `Delivery for ${data.company} scheduled successfully.`,
+            action: <CheckCircle className="text-green-500" />,
+        })
+        form.reset();
+    }
   }
 
+  const FormWrapper = isEditMode ? 'div' : Card;
+  const formProps = isEditMode ? {} : { className: "shadow-lg" };
+
   return (
-    <Card className="shadow-lg">
-      <CardHeader>
-        <CardTitle>Add New Delivery</CardTitle>
-        <CardDescription>Fill in the details to schedule a new delivery.</CardDescription>
-      </CardHeader>
+    <FormWrapper {...formProps}>
+      {!isEditMode && (
+        <CardHeader>
+          <CardTitle>Add New Delivery</CardTitle>
+          <CardDescription>Fill in the details to schedule a new delivery.</CardDescription>
+        </CardHeader>
+      )}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4">
+          <CardContent className={cn("space-y-4", isEditMode && "p-0")}>
             <FormField
               control={form.control}
               name="company"
@@ -179,11 +204,13 @@ export default function OrderForm({ addOrder }: OrderFormProps) {
               )}
             />
           </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full">Save Delivery</Button>
+          <CardFooter className={cn(isEditMode && "p-0 pt-4")}>
+            <Button type="submit" className="w-full">
+                {isEditMode ? "Update Delivery" : "Save Delivery"}
+            </Button>
           </CardFooter>
         </form>
       </Form>
-    </Card>
+    </FormWrapper>
   )
 }

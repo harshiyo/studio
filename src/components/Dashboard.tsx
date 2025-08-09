@@ -1,8 +1,11 @@
 "use client"
 
 import type { Order } from "@/lib/types";
-import { format, isTomorrow, parseISO, startOfToday } from 'date-fns';
-import { Truck, Package, X, Calendar as CalendarIcon, User, Building } from 'lucide-react';
+import { format, isTomorrow, parseISO } from 'date-fns';
+import { Truck, Package, X, Calendar as CalendarIcon, User, Building, Pencil } from 'lucide-react';
+import * as React from "react";
+import OrderForm from './OrderForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,10 +26,13 @@ import {
 interface DashboardProps {
     orders: Order[];
     deleteOrder: (id: string) => void;
+    updateOrder: (order: Order) => void;
 }
 
-const OrderCard = ({ order, deleteOrder }: { order: Order; deleteOrder: (id: string) => void; }) => {
+const OrderCard = ({ order, deleteOrder, updateOrder }: { order: Order; deleteOrder: (id: string) => void; updateOrder: (order: Order) => void; }) => {
     const deliveryDate = parseISO(order.deliveryDate);
+    const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+
     return (
         <Card className="transition-all hover:shadow-md">
             <CardHeader>
@@ -41,27 +47,48 @@ const OrderCard = ({ order, deleteOrder }: { order: Order; deleteOrder: (id: str
                             {order.customerName}
                         </CardDescription>
                     </div>
-                     <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 w-8">
-                            <X className="w-4 h-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete this delivery record.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteOrder(order.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                     <div className="flex items-center">
+                        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary hover:bg-primary/10 h-8 w-8">
+                                    <Pencil className="w-4 h-4" />
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Edit Delivery</DialogTitle>
+                                </DialogHeader>
+                                <OrderForm 
+                                    orderToEdit={order} 
+                                    updateOrder={(updatedOrder) => {
+                                        updateOrder(updatedOrder);
+                                        setIsEditDialogOpen(false);
+                                    }}
+                                />
+                            </DialogContent>
+                        </Dialog>
+                         <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 w-8">
+                                <X className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete this delivery record.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteOrder(order.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent className="grid gap-2 text-sm">
@@ -90,7 +117,7 @@ const EmptyState = () => (
 );
 
 
-export default function Dashboard({ orders, deleteOrder }: DashboardProps) {
+export default function Dashboard({ orders, deleteOrder, updateOrder }: DashboardProps) {
     const sortedOrders = [...orders].sort((a, b) => new Date(a.deliveryDate).getTime() - new Date(b.deliveryDate).getTime());
     const tomorrowsDeliveries = sortedOrders.filter(order => {
         const deliveryDate = parseISO(order.deliveryDate);
@@ -109,7 +136,7 @@ export default function Dashboard({ orders, deleteOrder }: DashboardProps) {
             <TabsContent value="all" className="mt-4">
                 <div className="space-y-4">
                     {sortedOrders.length > 0 ? (
-                        sortedOrders.map(order => <OrderCard key={order.id} order={order} deleteOrder={deleteOrder} />)
+                        sortedOrders.map(order => <OrderCard key={order.id} order={order} deleteOrder={deleteOrder} updateOrder={updateOrder} />)
                     ) : (
                         <EmptyState />
                     )}
@@ -118,7 +145,7 @@ export default function Dashboard({ orders, deleteOrder }: DashboardProps) {
             <TabsContent value="tomorrow" className="mt-4">
                 <div className="space-y-4">
                     {tomorrowsDeliveries.length > 0 ? (
-                        tomorrowsDeliveries.map(order => <OrderCard key={order.id} order={order} deleteOrder={deleteOrder} />)
+                        tomorrowsDeliveries.map(order => <OrderCard key={order.id} order={order} deleteOrder={deleteOrder} updateOrder={updateOrder} />)
                     ) : (
                        <div className="text-center py-12 px-6 bg-card rounded-lg border border-dashed">
                             <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground" />
